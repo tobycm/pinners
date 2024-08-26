@@ -1,6 +1,6 @@
-import { GuildMember } from "discord.js";
+import { GuildBasedChannel, GuildMember } from "discord.js";
 
-type SupportedTypes = string | number | boolean | GuildMember;
+type SupportedTypes = string | number | boolean | GuildMember | GuildBasedChannel;
 
 export default class CommandOptions {
   private options = new Map<string, SupportedTypes>();

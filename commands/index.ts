@@ -1,21 +1,13 @@
 import Bot from "Bot";
 import Command from "modules/command";
-import cunny from "./cunny";
 import help from "./help";
-import note from "./note";
+import pin from "./pin";
 import ping from "./ping";
-import prefix from "./prefix";
-import random from "./random";
 
 const commands: Command[] = [
   ping, // add your commands here
-  note.get,
-  note.set,
-  note.update,
-  note._delete,
-  prefix,
-  random,
-  cunny,
+  pin._new,
+  pin.list,
   help,
 ];
 

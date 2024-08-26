@@ -1,4 +1,16 @@
-import { ApplicationCommandOptionBase, ApplicationCommandOptionType, GuildMember, PermissionFlagsBits } from "discord.js";
+import {
+  APIEmbedField,
+  ApplicationCommandOptionBase,
+  ApplicationCommandOptionType,
+  codeBlock,
+  escapeCodeBlock,
+  GuildMember,
+  hyperlink,
+  Message,
+  messageLink,
+  PermissionFlagsBits,
+} from "discord.js";
+import { Pin } from "models/pin";
 import Command from "./command";
 
 export type Perm = keyof typeof PermissionFlagsBits;
@@ -47,4 +59,24 @@ export function parseIdFromUserMention(mention: string): string {
   if (mention.startsWith("!")) mention = mention.slice(1);
 
   return mention;
+}
+
+export function parseIdFromChannelMention(mention: string): string {
+  if (!mention.startsWith("<#") || !mention.endsWith(">")) return "";
+
+  return mention.slice(2, -1);
+}
+
+export function trimString(str: string, max: number, end: string = "..."): string {
+  return str.length > max ? `${str.slice(0, max - end.length)}...` : str;
+}
+
+export function makePinEntry(pin: Pin & { message: Message }): APIEmbedField {
+  const date = new Date(pin.created).toLocaleString();
+
+  return {
+    name: `### ${hyperlink(`Pin on ${date}`, messageLink(pin.message.channel.id, pin.message.id))}\n`,
+    value: codeBlock(escapeCodeBlock(trimString(pin.message.content, 900))),
+    inline: false,
+  };
 }
