@@ -1,56 +1,29 @@
-import { Events, GatewayIntentBits } from "discord.js";
-import commands from "./commands";
-import Pinners from "./Pinners";
+import { GatewayIntentBits, Partials } from "discord.js";
+import Bot from "./Bot";
+import setupCommands from "./commands";
+import { setupBotEvents, setupDatabaseEvents } from "./events";
 
 // Creating an instance of the Discord.js client
-const client = new Pinners({
+const bot = new Bot({
   discord: {
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates],
+    intents: [
+      GatewayIntentBits.Guilds, //
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.DirectMessages,
+    ],
+    partials: [Partials.Channel],
   },
-  redis: process.env.REDIS_URL ?? 6379,
+  acebase: {
+    type: "local",
+    databaseName: "bot",
+  },
 });
 
-const admins = process.env.ADMINS?.split(",") || [];
-
-client.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot) return;
-
-  if (!admins.includes(message.author.id)) return;
-
-  if (message.content.split(" ")[1] === "deploy")
-    try {
-      await client.application?.commands.set(commands.map((command) => command.data));
-      await message.reply("Deployed commands.");
-      console.log("Deployed commands.");
-    } catch (error) {
-      console.error(error);
-      await message.reply("Failed to deploy commands.");
-    }
-});
-
-// Event: Interaction created
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isButton()) return;
-
-  if (interaction.isAutocomplete()) {
-    const command = commands.find((cmd) => cmd.data.name === interaction.commandName);
-    if (!command?.completion) return;
-
-    return await command.completion(interaction);
-  }
-
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = commands.find((cmd) => cmd.data.name === interaction.commandName);
-  if (!command) return;
-
-  try {
-    await command.run(interaction);
-  } catch (error) {
-    console.error(error);
-    await interaction.reply("An error occurred while executing this command.");
-  }
-});
+setupCommands(bot);
+setupBotEvents(bot);
+setupDatabaseEvents(bot.db);
 
 if (!process.env.DISCORD_TOKEN) {
   console.error("No Discord token provided.");
@@ -58,4 +31,4 @@ if (!process.env.DISCORD_TOKEN) {
 }
 
 // Logging in with the Discord token
-client.login(process.env.DISCORD_TOKEN);
+bot.login(process.env.DISCORD_TOKEN);
