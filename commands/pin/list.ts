@@ -12,9 +12,9 @@ export default new Command({
   async run(ctx) {
     const pins: Pin[] = [];
 
-    const s = await ctx.bot.db.ref("pins").child(ctx.channel.id).get<Pin[]>();
+    const s = await ctx.bot.db.ref("pins").child(ctx.channel.id).get<{ [key: string]: Pin }>();
 
-    if (s.exists()) pins.push(...s.val()!);
+    if (s.exists()) pins.push(...Object.values(s.val()!));
 
     if (!pins.length) return ctx.reply("You don't have any pins yet.");
 
@@ -35,11 +35,11 @@ export default new Command({
       .setTitle("Your Pins")
       .setAuthor({ name: `${inlineCode(ctx.author.displayName)}'s pins`, iconURL: ctx.author.avatarURL() ?? undefined })
       .setColor("Random")
-      .setDescription(`You have ${pinsWithMessages.length} pins. ${pinsWithMessages.filter((pin) => !pin).length} pins' messages failed to retrieve.`)
+      .setDescription(`You have ${pinsWithMessages.length} pins. ${pinsWithMessages.filter((pin) => !pin).length} pins failed to retrieve.`)
       .setFooter({ text: "Scope: Channel" })
       .setTimestamp()
       .addFields(pinsWithMessages.filter((pin) => pin).map((pin) => makePinEntry(pin!)));
 
-    return ctx.send({ embeds: [embed] });
+    return ctx.send({ embeds: [embed], allowedMentions: { parse: [] } });
   },
 });

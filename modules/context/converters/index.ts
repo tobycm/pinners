@@ -1,13 +1,12 @@
 import {
   ApplicationCommandOptionBase,
   SlashCommandBooleanOption,
-  SlashCommandChannelOption,
   SlashCommandIntegerOption,
   SlashCommandStringOption,
   SlashCommandUserOption,
   inlineCode,
 } from "discord.js";
-import { parseIdFromChannelMention, parseIdFromUserMention } from "modules/utils";
+import { parseIdFromUserMention } from "modules/utils";
 import { MessageContext } from "..";
 import parseAndValidateBoolean from "./validators/boolean";
 import validateInteger from "./validators/integer";
@@ -51,6 +50,7 @@ export function messageToInteractionOptions(ctx: MessageContext, args: string[],
       let user = ctx.guild?.members.cache.find((member) => member.nickname === arg);
 
       if (!user) user = ctx.guild?.members.cache.find((member) => member.user.username === arg);
+
       if (!user) user = ctx.guild?.members.cache.get(arg);
       if (!user) {
         const id = parseIdFromUserMention(arg);
@@ -61,19 +61,6 @@ export function messageToInteractionOptions(ctx: MessageContext, args: string[],
       if (!user) return ctx.reply("User not found in this server");
 
       ctx.options.set(option.name, user);
-    }
-
-    if (option instanceof SlashCommandChannelOption) {
-      let channel = ctx.guild?.channels.cache.find((c) => c.name === arg);
-      if (!channel) channel = ctx.guild?.channels.cache.get(arg);
-      if (!channel) {
-        const id = parseIdFromChannelMention(arg);
-        if (id) channel = ctx.guild?.channels.cache.get(id);
-      }
-
-      if (!channel) return ctx.reply("Channel not found in this server");
-
-      ctx.options.set(option.name, channel);
     }
   }
 }

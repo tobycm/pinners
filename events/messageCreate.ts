@@ -32,7 +32,7 @@ export default function messageCreateEvent(bot: Bot) {
     if (prefix === null) prefix = Constants.defaultPrefix;
 
     if (message.content === userMention(message.client.user?.id)) {
-      message.reply(`My prefix is ${inlineCode(prefix)}.`);
+      message.reply(`Prefix của mình là ${inlineCode(prefix)}.`);
       return;
     }
 
@@ -70,7 +70,7 @@ export default function messageCreateEvent(bot: Bot) {
         }
       }
 
-      const ctx = MessageContext(message);
+      const ctx = await MessageContext(message);
       messageToInteractionOptions(ctx, args, command.data.options as ApplicationCommandOptionBase[]);
 
       try {

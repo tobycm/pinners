@@ -1,3 +1,4 @@
+import Bot from "Bot";
 import {
   APIEmbedField,
   ApplicationCommandOptionBase,
@@ -12,6 +13,7 @@ import {
 } from "discord.js";
 import { Pin } from "models/pin";
 import Command from "./command";
+import { BaseContext } from "./context";
 
 export type Perm = keyof typeof PermissionFlagsBits;
 
@@ -79,4 +81,16 @@ export function makePinEntry(pin: Pin & { message: Message }): APIEmbedField {
     value: codeBlock(escapeCodeBlock(trimString(pin.message.content, 900))),
     inline: false,
   };
+}
+
+export async function getUserLang(ctx: Omit<BaseContext, "lang">): Promise<Bot["lang"][keyof Bot["lang"]]> {
+  const lang = ctx.bot.cache.get(`users:${ctx.author.id}:lang`) as keyof Bot["lang"];
+
+  if (lang) return ctx.bot.lang[lang];
+
+  const user = await ctx.bot.db.ref("users").child(ctx.author.id).get<keyof Bot["lang"]>();
+
+  if (!user.exists()) return ctx.bot.lang["en-us"];
+
+  return ctx.bot.lang[user.val()!];
 }
