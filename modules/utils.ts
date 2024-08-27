@@ -6,7 +6,6 @@ import {
   codeBlock,
   escapeCodeBlock,
   GuildMember,
-  hyperlink,
   Message,
   messageLink,
   PermissionFlagsBits,
@@ -77,7 +76,7 @@ export function makePinEntry(pin: Pin & { message: Message }): APIEmbedField {
   const date = new Date(pin.created).toLocaleString();
 
   return {
-    name: `### ${hyperlink(`Pin on ${date}`, messageLink(pin.message.channel.id, pin.message.id))}\n`,
+    name: `Pin on ${date} ${messageLink(pin.message.channel.id, pin.message.id)}\n`,
     value: codeBlock(escapeCodeBlock(trimString(pin.message.content, 900))),
     inline: false,
   };
