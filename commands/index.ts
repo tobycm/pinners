@@ -8,6 +8,7 @@ const commands: Command[] = [
   ping, // add your commands here
   pin._new,
   pin.list,
+  pin.nuke,
   help,
 ];
 

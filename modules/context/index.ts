@@ -59,35 +59,6 @@ export const MessageContext = async (message: Message): Promise<MessageContext> 
   };
 };
 
-// export class MessageContext extends BaseContext {
-//   constructor(message: Message) {
-//     super();
-//     this.bot = message.client;
-//     this.original = message;
-
-//     this.channel = message.channel;
-//     this.guild = message.guild;
-//     this.author = message.author;
-//     this.member = message.member; // hope nothing goes wrong
-
-//     // remember to convert message arguments to interaction options
-//   }
-
-//   options = new CommandOptions();
-
-//   declare original: Message;
-
-//   async send(message: string) {
-//     const m = await this.original.channel.send(message);
-//     return new MessageContext(m);
-//   }
-
-//   async reply(message: string | ReplyOptions) {
-//     const m = await this.original.reply(message);
-//     return new MessageContext(m);
-//   }
-// }
-
 export interface ChatInputInteractionContext<GuildOnly extends boolean = false> extends BaseContext<GuildOnly> {
   original: ChatInputCommandInteraction;
 
@@ -114,39 +85,6 @@ export const ChatInputInteractionContext = async (interaction: ChatInputCommandI
   };
 };
 
-// export class ChatInputInteractionContext extends BaseContext {
-//   constructor(interaction: ChatInputCommandInteraction) {
-//     super();
-//     this.bot = interaction.client;
-//     this.original = interaction;
-
-//     this.channel = interaction.channel!;
-//     this.guild = interaction.guild;
-
-//     this.author = interaction.user;
-//     this.member = interaction.member as GuildMember;
-
-//     for (const option of interaction.options.data) {
-//       if (typeof option.value !== "string") continue;
-//       this.options.set(option.name, option.value);
-//     }
-//   }
-
-//   declare original: ChatInputCommandInteraction;
-
-//   options = new CommandOptions();
-
-//   async send(message: string) {
-//     const response = await this.original.reply(message);
-//     return new InteractionResponseContext(response);
-//   }
-
-//   async reply(message: string | ReplyOptions) {
-//     const response = await this.original.reply(message);
-//     return new InteractionResponseContext(response);
-//   }
-// }
-
 export interface InteractionResponseContext extends BaseContext {
   original: InteractionResponse<true>;
 
@@ -172,34 +110,6 @@ export const InteractionResponseContext = async (response: InteractionResponse<t
     lang: await getUserLang(ctx),
   };
 };
-
-// export class InteractionResponseContext extends BaseContext {
-//   constructor(response: InteractionResponse<true>) {
-//     super();
-//     this.bot = response.client;
-//     this.original = response;
-
-//     this.channel = response.interaction.channel!;
-//     this.guild = response.interaction.guild;
-
-//     this.author = response.interaction.user;
-//     this.member = response.interaction.member;
-//   }
-
-//   options = new CommandOptions();
-
-//   declare original: InteractionResponse<true>;
-
-//   async send(message: string) {
-//     const response = await this.channel.send(message);
-//     return new MessageContext(response);
-//   }
-
-//   async reply(message: string | ReplyOptions) {
-//     const response = await (await this.original.fetch()).reply(message);
-//     return new MessageContext(response);
-//   }
-// }
 
 export interface ButtonInteractionContext extends BaseContext {
   original: ButtonInteraction;

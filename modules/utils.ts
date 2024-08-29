@@ -6,13 +6,12 @@ import {
   codeBlock,
   escapeCodeBlock,
   GuildMember,
-  Message,
   messageLink,
   PermissionFlagsBits,
   time,
   TimestampStyles,
 } from "discord.js";
-import { Pin } from "models/pin";
+import { MessagePin } from "models/pin";
 import Command from "./command";
 import { BaseContext } from "./context";
 
@@ -74,7 +73,7 @@ export function trimString(str: string, max: number, end: string = "..."): strin
   return str.length > max ? `${str.slice(0, max - end.length)}...` : str;
 }
 
-export function makePinEntry(pin: Pin & { message: Message }): APIEmbedField {
+export function makePinEntry(pin: MessagePin<true>): APIEmbedField {
   const date = new Date(pin.created);
 
   return {
