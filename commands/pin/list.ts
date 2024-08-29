@@ -148,28 +148,28 @@ export default new Command({
     if (channelPins.length)
       embed.addFields({
         name: "Channel pins",
-        value: channelPins.map((pin) => channelMention(pin.channelId)).join("\n"),
+        value: channelPins.map((pin) => channelMention(pin.channelId)).join(" "),
       });
 
     const userPins = filteredPins.filter((pin) => pin?.type === "user");
     if (userPins.length)
       embed.addFields({
         name: "User pins",
-        value: userPins.map((pin) => pin.user.toString()).join("\n"),
+        value: userPins.map((pin) => pin.user.toString()).join(" "),
       });
 
     const rolePins = filteredPins.filter((pin) => pin?.type === "role");
     if (rolePins.length)
       embed.addFields({
         name: "Role pins",
-        value: rolePins.map((pin) => pin.role.toString()).join("\n"),
+        value: rolePins.map((pin) => pin.role.toString()).join(" "),
       });
 
     const slashCommandPins = filteredPins.filter((pin) => pin?.type === "slashCommand");
     if (slashCommandPins.length)
       embed.addFields({
         name: "Slash Command pins",
-        value: slashCommandPins.map((pin) => `</${pin.commandName}:${pin.commandId}>`).join("\n"),
+        value: slashCommandPins.map((pin) => `</${pin.commandName}:${pin.commandId}>`).join(" "),
       });
 
     const messagePins = filteredPins.filter((pin) => pin?.type === "message") as MessagePin<true>[];

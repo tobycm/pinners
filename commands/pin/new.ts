@@ -1,7 +1,25 @@
-import { GuildBasedChannel, Message, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonInteraction,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  ComponentType,
+  GuildBasedChannel,
+  Message,
+  ModalBuilder,
+  PermissionFlagsBits,
+  Role,
+  SlashCommandBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  User,
+} from "discord.js";
 import { Pin } from "models/pin";
-import { collectFirstMessage } from "modules/asyncCollectors";
+import { collectFirstInteraction, collectFirstMessage } from "modules/asyncCollectors";
 import Command from "modules/command";
+import { InteractionResponseContext, MessageContext } from "modules/context";
+import { toTitleCase } from "modules/utils";
 
 const data = new SlashCommandBuilder()
   .setName("new")
@@ -33,41 +51,186 @@ data.addStringOption((option) =>
 export default new Command({
   data,
   async run(ctx) {
-    const original = await ctx.reply("Please reply to the message you want to pin.");
-
     const personal = ctx.options.get<boolean>("personal") ?? false;
     const channel = ctx.options.get<GuildBasedChannel>("channel") ?? ctx.channel;
     const server = ctx.options.get<boolean>("server") ?? false;
     const type = ctx.options.get<"message" | "channel" | "user" | "slashCommand" | "role">("type") ?? "message";
 
     if (!ctx.guild) {
-      if (server) return original.original.edit({ content: "Server option is only available in a server. :(" });
-      if (["channel", "role"].includes(type)) return original.original.edit({ content: "Channel and Role type is only available in a server. :(" });
+      if (server) return ctx.reply({ content: "Server option is only available in a server. :(" });
+      if (["channel", "role"].includes(type)) return ctx.reply({ content: "Channel and Role type is only available in a server. :(" });
     }
 
-    if (!channel.isTextBased()) return original.original.edit({ content: "Text based channel only please :(." });
+    if (!channel.isTextBased()) return ctx.reply({ content: "Text based channel only please :(." });
 
-    let message: Message;
-    try {
-      message = await collectFirstMessage(ctx.channel, {
-        filter: (m) => m.author.id === ctx.author.id && m.reference !== null,
-        time: 120000,
+    let pin: Pin<false>;
+
+    let original: InteractionResponseContext | MessageContext;
+    if (type !== "slashCommand") original = await ctx.reply("Creating a new pin...");
+
+    if (type === "message") {
+      original!.original.edit("Please reply to the message you want to pin.");
+
+      let message: Message;
+      try {
+        message = await collectFirstMessage(ctx.channel, {
+          filter: (m) => m.author.id === ctx.author.id && m.reference !== null,
+          time: 120000,
+        });
+      } catch {
+        return original!.original.edit({ content: "Sory, you took too long to reply. :(" });
+      }
+
+      pin = {
+        created: Date.now(),
+
+        type: "message",
+        messageId: message.reference!.messageId!,
+        message: undefined,
+      };
+    } else if (type === "channel") {
+      original!.original.edit("Please mention the channel you want to pin.");
+
+      let channel: GuildBasedChannel;
+      try {
+        const message = await collectFirstMessage(ctx.channel, {
+          filter: (m) => m.author.id === ctx.author.id && m.mentions.channels.size > 0,
+          time: 120000,
+        });
+
+        channel = message.mentions.channels.first() as GuildBasedChannel;
+      } catch {
+        return original!.original.edit({ content: "Sory, you took too long to mention the channel. :(" });
+      }
+
+      pin = {
+        created: Date.now(),
+
+        type: "channel",
+        channelId: channel.id,
+        channel: undefined,
+      };
+    } else if (type === "user") {
+      original!.original.edit("Please mention the user you want to pin.");
+
+      let user: User;
+      try {
+        const message = await collectFirstMessage(ctx.channel, {
+          filter: (m) => m.author.id === ctx.author.id && m.mentions.users.size > 0,
+          time: 120000,
+        });
+
+        user = message.mentions.users.first()!;
+      } catch {
+        return original!.original.edit({ content: "Sory, you took too long to mention the user. :(" });
+      }
+
+      pin = {
+        created: Date.now(),
+
+        type: "user",
+        userId: user.id,
+        user: undefined,
+      };
+    } else if (type === "slashCommand") {
+      let interaction: ButtonInteraction | ChatInputCommandInteraction;
+
+      if (ctx.original instanceof Message) {
+        ctx.reply({
+          content: "Please open the modal to enter the command name and ID.",
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder().setCustomId("openModal").setLabel("Open Modal").setStyle(ButtonStyle.Primary)
+            ),
+          ],
+        });
+        try {
+          interaction = await collectFirstInteraction<ButtonInteraction>(ctx.bot, {
+            componentType: ComponentType.Button,
+            filter: (i) => i.user.id === ctx.author.id && i.customId === "openModal",
+            channel: ctx.channel,
+            time: 60000,
+          });
+        } catch {
+          return ctx.reply({ content: "You took too long to open the modal. :(" });
+        }
+      } else interaction = ctx.original;
+
+      interaction.showModal(
+        new ModalBuilder()
+          .setCustomId("new slashCommand pin")
+          .setTitle("New slash command pin")
+          .addComponents(
+            new ActionRowBuilder<TextInputBuilder>().addComponents(
+              new TextInputBuilder()
+                .setCustomId("commandName")
+                .setLabel("Command Name")
+                .setPlaceholder("ping")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true)
+            ),
+            new ActionRowBuilder<TextInputBuilder>().addComponents(
+              new TextInputBuilder()
+                .setCustomId("commandId")
+                .setLabel("Command ID")
+                .setPlaceholder("123456789012345")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true)
+            )
+          )
+      );
+
+      const response = await interaction.awaitModalSubmit({
+        time: 60000,
+        filter: (i) => i.user.id === ctx.author.id && i.customId === "new slashCommand pin",
       });
-    } catch {
-      return original.original.edit({ content: "Sory, you took too long to reply. :(" });
-    }
+
+      const commandName = response.fields.getTextInputValue("commandName");
+      const commandId = response.fields.getTextInputValue("commandId");
+
+      pin = {
+        created: Date.now(),
+
+        type: "slashCommand",
+        commandName,
+        commandId,
+      };
+
+      response.deferUpdate();
+
+      original = await ctx.send("Creating a new pin...");
+    } else if (type === "role") {
+      original!.original.edit("Please mention the role you want to pin.");
+
+      let role: Role;
+      try {
+        const message = await collectFirstMessage(ctx.channel, {
+          filter: (m) => m.author.id === ctx.author.id && m.mentions.roles.size > 0,
+          time: 120000,
+        });
+
+        role = message.mentions.roles.first()!;
+      } catch {
+        return original!.original.edit({ content: "Sory, you took too long to mention the role. :(" });
+      }
+
+      pin = {
+        created: Date.now(),
+
+        type: "role",
+        roleId: role.id,
+        role: undefined,
+      };
+    } else return;
 
     ctx.bot.db
       .ref("pins")
-      .child<Pin[]>(personal ? ctx.author.id : server ? ctx.guild!.id : channel.id)
-      .push({
-        created: Date.now(),
+      .child<{ [key: string]: Pin }>(personal ? ctx.author.id : server ? ctx.guild!.id : channel.id)
+      .push(pin);
 
-        messageId: message.reference!.messageId!,
-      });
+    if (original!.original instanceof Message) original!.original.react("📌");
+    else (await original!.original.fetch()).react("📌");
 
-    message.react("📌");
-
-    return original.original.edit({ content: "Message pinned successfully!" });
+    return original!.original.edit({ content: `${toTitleCase(type)} pinned successfully!` });
   },
 });

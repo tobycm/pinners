@@ -94,3 +94,5 @@ export async function getUserLang(ctx: Omit<BaseContext, "lang">): Promise<Bot["
 
   return ctx.bot.lang[user.val()!];
 }
+
+export const toTitleCase = (str: string) => str.replace(/\w\S*/g, (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase());

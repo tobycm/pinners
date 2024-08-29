@@ -18,6 +18,9 @@ const bot = new Bot({
   acebase: {
     type: "local",
     databaseName: "bot",
+    storage: {
+      removeVoidProperties: true,
+    },
   },
 });
 

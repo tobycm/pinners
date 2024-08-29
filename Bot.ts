@@ -1,10 +1,10 @@
-import { AceBase } from "acebase";
+import { AceBase, AceBaseLocalSettings } from "acebase";
 import { AceBaseClient, AceBaseClientConnectionSettings } from "acebase-client";
 import { Client, type ClientOptions } from "discord.js";
 import Command from "modules/command";
 import langs from "./lang/index";
 
-interface AceBaseLocalOptions {
+interface AceBaseLocalOptions extends Partial<AceBaseLocalSettings> {
   type: "local";
   databaseName: string;
 }
@@ -22,7 +22,7 @@ export default class Bot<Ready extends boolean = boolean> extends Client<Ready> 
   constructor(options: BotOptions) {
     super(options.discord);
 
-    if (options.acebase.type === "local") this.db = new AceBase(options.acebase.databaseName);
+    if (options.acebase.type === "local") this.db = new AceBase(options.acebase.databaseName, options.acebase);
     else if (options.acebase.type === "client") this.db = new AceBaseClient(options.acebase);
     else this.db = new AceBase("bot");
   }
