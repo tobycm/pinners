@@ -64,6 +64,7 @@ export default new Command({
     if (!channel.isTextBased()) return ctx.reply({ content: "Text based channel only please :(." });
 
     let pin: Pin<false>;
+    let id: string;
 
     let original: InteractionResponseContext | MessageContext;
     if (type !== "slashCommand") original = await ctx.reply("Creating a new pin...");
@@ -88,6 +89,7 @@ export default new Command({
         messageId: message.reference!.messageId!,
         message: undefined,
       };
+      id = message.reference!.messageId!;
     } else if (type === "channel") {
       original!.original.edit("Please mention the channel you want to pin.");
 
@@ -110,6 +112,7 @@ export default new Command({
         channelId: channel.id,
         channel: undefined,
       };
+      id = channel.id;
     } else if (type === "user") {
       original!.original.edit("Please mention the user you want to pin.");
 
@@ -132,6 +135,7 @@ export default new Command({
         userId: user.id,
         user: undefined,
       };
+      id = user.id;
     } else if (type === "slashCommand") {
       let interaction: ButtonInteraction | ChatInputCommandInteraction;
 
@@ -167,6 +171,8 @@ export default new Command({
                 .setLabel("Command Name")
                 .setPlaceholder("ping")
                 .setStyle(TextInputStyle.Short)
+                .setMinLength(1)
+                .setMaxLength(32)
                 .setRequired(true)
             ),
             new ActionRowBuilder<TextInputBuilder>().addComponents(
@@ -175,6 +181,7 @@ export default new Command({
                 .setLabel("Command ID")
                 .setPlaceholder("123456789012345")
                 .setStyle(TextInputStyle.Short)
+                .setMaxLength(25)
                 .setRequired(true)
             )
           )
@@ -188,6 +195,8 @@ export default new Command({
       const commandName = response.fields.getTextInputValue("commandName");
       const commandId = response.fields.getTextInputValue("commandId");
 
+      if (commandId.match(/^\d+$/) === null) return response.reply({ content: "Invalid command ID. :(" });
+
       pin = {
         created: Date.now(),
 
@@ -195,8 +204,9 @@ export default new Command({
         commandName,
         commandId,
       };
+      id = commandId;
 
-      response.deferUpdate();
+      response.reply({ content: "Processing..." });
 
       original = await ctx.send("Creating a new pin...");
     } else if (type === "role") {
@@ -221,12 +231,17 @@ export default new Command({
         roleId: role.id,
         role: undefined,
       };
+      id = role.id;
     } else return;
 
-    ctx.bot.db
-      .ref("pins")
-      .child<{ [key: string]: Pin }>(personal ? ctx.author.id : server ? ctx.guild!.id : channel.id)
-      .push(pin);
+    {
+      const s = ctx.bot.db
+        .ref("pins")
+        .child(personal ? ctx.author.id : server ? ctx.guild!.id : channel.id)
+        .child(id);
+      if (await s.exists()) return original!.original.edit({ content: "This pin already exists. :0" });
+      s.set(pin);
+    }
 
     if (original!.original instanceof Message) original!.original.react("📌");
     else (await original!.original.fetch()).react("📌");
