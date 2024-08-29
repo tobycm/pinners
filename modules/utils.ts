@@ -9,6 +9,8 @@ import {
   Message,
   messageLink,
   PermissionFlagsBits,
+  time,
+  TimestampStyles,
 } from "discord.js";
 import { Pin } from "models/pin";
 import Command from "./command";
@@ -73,10 +75,10 @@ export function trimString(str: string, max: number, end: string = "..."): strin
 }
 
 export function makePinEntry(pin: Pin & { message: Message }): APIEmbedField {
-  const date = new Date(pin.created).toLocaleString();
+  const date = new Date(pin.created);
 
   return {
-    name: `Pin on ${date} ${messageLink(pin.message.channel.id, pin.message.id)}\n`,
+    name: `Pin on ${time(date, TimestampStyles.ShortDateTime)} ${messageLink(pin.message.channel.id, pin.message.id)}\n`,
     value: codeBlock(escapeCodeBlock(trimString(pin.message.content, 900))),
     inline: false,
   };
